@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SimpleX</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #000; --surface: #0f0f0f; --border: #2f2f2f;
+      --text: #e7e9ea; --muted: #71767b;
+      --accent: #1d9bf0; --accent-hover: #1a8cd8; --danger: #f4212e;
+    }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; min-height: 100vh; }
+    #auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+    .auth-logo { font-size: 40px; font-weight: 900; letter-spacing: -2px; color: var(--accent); margin-bottom: 32px; }
+    .auth-card { width: 100%; max-width: 400px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; }
+    .auth-card h2 { font-size: 22px; font-weight: 700; margin-bottom: 24px; }
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    .field input { width: 100%; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 15px; outline: none; transition: border-color 0.15s; }
+    .field input:focus { border-color: var(--accent); }
+    .btn { width: 100%; padding: 12px; border: none; border-radius: 24px; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s, opacity 0.15s; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); margin-top: 10px; }
+    .btn-ghost:hover { background: rgba(255,255,255,0.05); }
+    .auth-error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 18px; }
+    #app-screen { display: none; }
+    .layout { max-width: 600px; margin: 0 auto; border-left: 1px solid var(--border); border-right: 1px solid var(--border); min-height: 100vh; }
+    .header { position: sticky; top: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; z-index: 10; }
+    .header-logo { font-size: 20px; font-weight: 900; color: var(--accent); letter-spacing: -1px; }
+    .header-user { display: flex; align-items: center; gap: 10px; }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .username-label { font-size: 14px; font-weight: 600; color: var(--text); }
+    .btn-logout { background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 13px; padding: 6px 14px; border-radius: 20px; cursor: pointer; transition: color 0.15s, border-color 0.15s; }
+    .btn-logout:hover { color: var(--danger); border-color: var(--danger); }
+    .compose { border-bottom: 1px solid var(--border); padding: 16px; display: flex; gap: 12px; }
+    .compose-body { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+    .compose textarea { width: 100%; background: transparent; border: none; color: var(--text); font-size: 18px; resize: none; outline: none; min-height: 60px; font-family: inherit; line-height: 1.5; }
+    .compose textarea::placeholder { color: var(--muted); }
+    .compose-footer { display: flex; align-items: center; justify-content: space-between; }
+    .char-count { font-size: 13px; color: var(--muted); }
+    .char-count.warn { color: #ffd700; }
+    .char-count.over { color: var(--danger); }
+    .btn-post { background: var(--accent); color: #fff; border: none; border-radius: 20px; padding: 8px 20px; font-size: 14px; font-weight: 700; cursor: pointer; transition: background 0.15s, opacity 0.15s; }
+    .btn-post:hover { background: var(--accent-hover); }
+    .btn-post:disabled { opacity: 0.5; cursor: not-allowed; }
+    .post-item { display: flex; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--border); transition: background 0.1s; }
+    .post-item:hover { background: rgba(255,255,255,0.02); }
+    .post-body { flex: 1; min-width: 0; }
+    .post-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+    .post-name { font-size: 15px; font-weight: 700; }
+    .post-handle { font-size: 14px; color: var(--muted); }
+    .post-time { font-size: 14px; color: var(--muted); }
+    .post-content { font-size: 15px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+    .post-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+    .btn-delete { background: transparent; border: none; color: var(--muted); font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: color 0.15s, background 0.15s; }
+    .btn-delete:hover { color: var(--danger); background: rgba(244,33,46,0.1); }
+    .empty-state { text-align: center; color: var(--muted); padding: 60px 20px; font-size: 15px; }
+    .loading { text-align: center; color: var(--muted); padding: 30px; font-size: 14px; }
+    .divider { text-align: center; color: var(--muted); font-size: 13px; margin: 16px 0; position: relative; }
+    .divider::before, .divider::after { content: ''; position: absolute; top: 50%; width: 42%; height: 1px; background: var(--border); }
+    .divider::before { left: 0; }
+    .divider::after { right: 0; }
+  </style>
+</head>
+<body>
+
+<div id="auth-screen">
+  <div class="auth-logo">SimpleX</div>
+  <div class="auth-card">
+    <h2 id="auth-title">ログイン</h2>
+    <div class="field">
+      <label>メールアドレス</label>
+      <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label>パスワード</label>
+      <input type="password" id="password" placeholder="パスワード" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" id="btn-auth">ログイン</button>
+    <div class="auth-error" id="auth-error"></div>
+    <div class="divider">または</div>
+    <button class="btn btn-ghost" id="btn-toggle">アカウントを作成</button>
+  </div>
+</div>
+
+<div id="app-screen">
+  <div class="layout">
+    <div class="header">
+      <span class="header-logo">SimpleX</span>
+      <div class="header-user">
+        <div class="avatar" id="header-avatar">?</div>
+        <span class="username-label" id="header-username">@user</span>
+        <button class="btn-logout" id="btn-logout">ログアウト</button>
+      </div>
+    </div>
+    <div class="compose">
+      <div class="avatar" id="compose-avatar">?</div>
+      <div class="compose-body">
+        <textarea id="compose-text" placeholder="いまどうしてる？" maxlength="280" rows="3"></textarea>
+        <div class="compose-footer">
+          <span class="char-count" id="char-count">0 / 280</span>
+          <button class="btn-post" id="btn-post" disabled>投稿する</button>
+        </div>
+      </div>
+    </div>
+    <div class="timeline" id="timeline">
+      <div class="loading">読み込み中...</div>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+let currentUser = null, currentProfile = null, isLogin = true;
+const authScreen = document.getElementById('auth-screen');
+const appScreen = document.getElementById('app-screen');
+const emailEl = document.getElementById('email');
+const passwordEl = document.getElementById('password');
+const btnAuth = document.getElementById('btn-auth');
+const btnToggle = document.getElementById('btn-toggle');
+const authTitle = document.getElementById('auth-title');
+const authError = document.getElementById('auth-error');
+const headerAvatar = document.getElementById('header-avatar');
+const headerUsername = document.getElementById('header-username');
+const composeAvatar = document.getElementById('compose-avatar');
+const composeText = document.getElementById('compose-text');
+const charCount = document.getElementById('char-count');
+const btnPost = document.getElementById('btn-post');
+const timeline = document.getElementById('timeline');
+btnToggle.addEventListener('click', () => {
+  isLogin = !isLogin;
+  authTitle.textContent = isLogin ? 'ログイン' : 'アカウントを作成';
+  btnAuth.textContent = isLogin ? 'ログイン' : '登録する';
+  btnToggle.textContent = isLogin ? 'アカウントを作成' : 'すでにアカウントをお持ちの方';
+  authError.textContent = '';
+});
+btnAuth.addEventListener('click', async () => {
+  const email = emailEl.value.trim(), password = passwordEl.value;
+  authError.textContent = ''; btnAuth.disabled = true;
+  try {
+    let error;
+    if (isLogin) { ({ error } = await supabase.auth.signInWithPassword({ email, password })); }
+    else { ({ error } = await supabase.auth.signUp({ email, password })); }
+    if (error) throw error;
+  } catch(e) { authError.textContent = e.message; }
+  finally { btnAuth.disabled = false; }
+});
+[emailEl, passwordEl].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') btnAuth.click(); }));
+supabase.auth.onAuthStateChange(async (event, session) => {
+  if (session?.user) {
+    currentUser = session.user;
+    const { data } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+    currentProfile = data;
+    authScreen.style.display = 'none'; appScreen.style.display = 'block';
+    const initial = (currentProfile?.username?.[0] || '?').toUpperCase();
+    headerAvatar.textContent = initial; composeAvatar.textContent = initial;
+    headerUsername.textContent = '@' + (currentProfile?.username || '...');
+    loadTimeline();
+  } else {
+    currentUser = null; currentProfile = null;
+    authScreen.style.display = ''; appScreen.style.display = 'none';
+  }
+});
+document.getElementById('btn-logout').addEventListener('click', () => supabase.auth.signOut());
+composeText.addEventListener('input', () => {
+  const len = composeText.value.length;
+  charCount.textContent = `${len} / 280`;
+  charCount.className = 'char-count' + (len > 260 ? ' warn' : '') + (len > 280 ? ' over' : '');
+  btnPost.disabled = len === 0 || len > 280;
+});
+btnPost.addEventListener('click', async () => {
+  const content = composeText.value.trim();
+  if (!content || !currentUser) return;
+  btnPost.disabled = true;
+  const { error } = await supabase.from('posts').insert({ user_id: currentUser.id, content });
+  if (!error) { composeText.value = ''; charCount.textContent = '0 / 280'; charCount.className = 'char-count'; loadTimeline(); }
+  btnPost.disabled = false;
+});
+async function loadTimeline() {
+  timeline.innerHTML = '<div class="loading">読み込み中...</div>';
+  const { data: posts, error } = await supabase.from('posts')
+    .select('id, content, created_at, user_id, profiles ( username, display_name )')
+    .order('created_at', { ascending: false }).limit(50);
+  if (error) { timeline.innerHTML = `<div class="empty-state">エラー: ${error.message}</div>`; return; }
+  if (!posts?.length) { timeline.innerHTML = '<div class="empty-state">まだ投稿がありません。最初につぶやいてみよう！</div>'; return; }
+  timeline.innerHTML = posts.map(post => {
+    const username = post.profiles?.username || '不明';
+    const displayName = post.profiles?.display_name || username;
+    const isOwn = post.user_id === currentUser?.id;
+    return `<div class="post-item">
+      <div class="avatar">${username[0].toUpperCase()}</div>
+      <div class="post-body">
+        <div class="post-header">
+          <span class="post-name">${esc(displayName)}</span>
+          <span class="post-handle">@${esc(username)}</span>
+          <span class="post-time">· ${fmt(post.created_at)}</span>
+        </div>
+        <div class="post-content">${esc(post.content)}</div>
+        ${isOwn ? `<div class="post-actions"><button class="btn-delete" data-id="${post.id}">削除</button></div>` : ''}
+      </div></div>`;
+  }).join('');
+  timeline.querySelectorAll('.btn-delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('この投稿を削除しますか？')) return;
+      const { error } = await supabase.from('posts').delete().eq('id', btn.dataset.id);
+      if (!error) loadTimeline();
+    });
+  });
+}
+supabase.channel('posts').on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => { if (currentUser) loadTimeline(); }).subscribe();
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmt(iso) {
+  const d = new Date(iso), now = new Date(), diff = Math.floor((now-d)/1000);
+  if (diff < 60) return diff + '秒前';
+  if (diff < 3600) return Math.floor(diff/60) + '分前';
+  if (diff < 86400) return Math.floor(diff/3600) + '時間前';
+  return d.toLocaleDateString('ja-JP', { month:'short', day:'numeric' });
+}
+</script>
+</body>
+</html>
